@@ -13,7 +13,7 @@ int compter_commande(char *cmd){
 			cpt++;
 		i++;
 	}
-	return cpt;
+	return cpt+1;
 }
 
 int compter_mot(char *cmd){
@@ -25,90 +25,97 @@ int compter_mot(char *cmd){
                        cpt++;
                 i++;
         }
-        return cpt;
+        return cpt+1;
 }
 
 void separer_mots(char** result, char *phrase){
-	unsigned int i = 0;
-	int j = 0;
+	int i = 0;
+	int j = strlen(phrase)-1;
+	int cpt = 0;
 	int last_i = 0;
-	//printf("Commande : %s\n", phrase);
-	for(i = 0; i < strlen(phrase) && phrase[i] != '|'; i++){
-		if((phrase[i] == ' ' && phrase[i+1] != ' ') || i == strlen(phrase)-1){
-			while(isspace(phrase[i]))
-                            i++;
-                        
-                        result[j] = malloc(i - last_i+2);
-			strncpy(result[j], &phrase[last_i], i-last_i+1);
-			result[j][i-last_i+1] = '\0';
-			//printf("Mot : %s\n", result[j]);
-			last_i = i; 
-			j++;
+	
+	while(phrase[i] != '\0' && (isspace(phrase[i]) || phrase[i] == '|' || phrase[i] == '&'))
+		i++;
+	while(j > 0 && (isspace(phrase[j]) || phrase[j] == '|' || phrase[j] == '&'))
+		j--;
+	
+	last_i = i;
+	while(i <= j){
+		if(phrase[i] == ' ' || i == j){
+			result[cpt] = malloc((i - last_i+2) * sizeof(char));
+                        strncpy(result[cpt], &phrase[last_i], i-last_i+1);
+                        result[cpt][i-last_i+1] = '\0';
+			last_i = i;
+
+			cpt++;
 		}
+		i++;
 	}
+	result[cpt] = NULL;
 }
 
+int separer_commande(char *cmd, char ***result, int *nb){
+	int i = 0;
+	int last_i = 0;
+	int cpt = 0;
+	int length = strlen(cmd);
+	int size = 0;
+	int flag = 0;	
+	while (i < length){
+		if(cmd[i] == '&'){
+			int tmp = i+1;
+			while(tmp < length)
+				if(isspace(cmd[tmp]))
+					tmp++;
+				else{
+					result[cpt] = NULL;
+					return -1;
+				}
+			flag = 1;
+		}
+		if(cmd[i] == '|' || i == length-1){
+			char *tmp = malloc(i-last_i+2);
+			strncpy(tmp, &cmd[last_i], i-last_i+1);
+			tmp[i-last_i+1] = '\0';
+			result[cpt] = malloc((compter_mot(cmd)+1)* sizeof(char*));
+			size += i-last_i+3;
+			separer_mots(result[cpt], tmp);
+			cpt++;
+			free(tmp);
+			last_i = i;
+		}
+		i++;
+	}	
+	result[cpt] = NULL;
+	*nb = cpt;
+	return flag;
+}
 
 
 char ***ligne_commande(int *flag, int *nb){
 	char *cmd = readline(NULL);
-	int nb_cmd = compter_commande(cmd)+2;
-        char *** result = malloc(nb_cmd);
-	unsigned int i = 0;
-	int last_i = 0;
-	int cmd_id = 0;
-
-	*flag = 0;
-	while(i < strlen(cmd) && (cmd[i] == ' ' || cmd[i] == '|')){
-		if(cmd[i] == ' ' || cmd[i] == '|')
-			*flag = -1;
-		i++;
-	}
-	while(i < strlen(cmd) && *flag != -1 && cmd_id < nb_cmd){
-			if((cmd[i] == '|' || i== strlen(cmd)-1) && cmd[i] != '&'){
-                                while((cmd[i] == '|' || cmd[i] == ' ') && i < strlen(cmd)-2){
-					i++;
-				}		
-				char *phrase = malloc(i-last_i+2);
-				strncpy(phrase, &cmd[last_i], i-last_i+1);
-				phrase[i-last_i+1] = '\0'; 
-				result[cmd_id] = malloc(compter_mot(phrase)+2);
-				separer_mots(result[cmd_id], phrase);		
-                                free(phrase);
-				last_i = i;
-				cmd_id++;	
-			} else if (cmd[i] == '&'){
-				i++;
-				while(i < strlen(cmd) && cmd[i] == ' ')
-					i++;
-				if(i >= strlen(cmd)-1)
-					*flag = 1;
-				else
-					*flag = -1;
-			}
-			i++;
-		}
-        result[cmd_id] = NULL;
-	if(*flag >= 0){
-		*nb = nb_cmd-1;
-		return result;
-	} else		
-		return NULL;
+	char *** result = malloc((compter_commande(cmd)+1) * sizeof(char**));
+	int f = separer_commande(cmd, result, nb);
+	*flag = f;
+	return result;
 }
 
 int main(void){
 	int flag;
 	int nb;
 	char ***cmdline = ligne_commande(&flag,&nb);
-        int i = 0;
+        
+	int i = 0;
         int j = 0;
         while(cmdline[i] != NULL){
             printf("Commande n°%d\n", i);
-            while(cmdline[i][j] != NULL){
-                printf("Mot : %s\n", cmdline[i][j]);
-                j++;
-            }
+            
+		while(cmdline[i][j] != NULL){
+                	printf("Mot : %s\n", cmdline[i][j]);
+                	j++;
+            	}
             j = 0;
+	
             i++;
         }
         printf("FLAG : %d NB : %d\n", flag, nb);
