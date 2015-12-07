@@ -28,7 +28,7 @@ int compter_mot(char *cmd){
         return cpt+1;
 }
 
-void separer_mots(char** result, char *phrase){
+int separer_mots(char** result, char *phrase){
 	int i = 0;
 	int j = strlen(phrase)-1;
 	int cpt = 0;
@@ -38,7 +38,8 @@ void separer_mots(char** result, char *phrase){
 		i++;
 	while(j > 0 && (isspace(phrase[j]) || phrase[j] == '|' || phrase[j] == '&'))
 		j--;
-	
+	if(j == i)
+		return 0;
 	last_i = i;
 	while(i <= j){
 		if(phrase[i] == ' ' || i == j){
@@ -52,6 +53,7 @@ void separer_mots(char** result, char *phrase){
 		i++;
 	}
 	result[cpt] = NULL;
+	return 1;
 }
 
 int separer_commande(char *cmd, char ***result, int *nb){
@@ -68,7 +70,7 @@ int separer_commande(char *cmd, char ***result, int *nb){
 				if(isspace(cmd[tmp]))
 					tmp++;
 				else{
-					result = NULL;
+				
 					result[cpt] = NULL;
 					return -1;
 				}
@@ -80,7 +82,11 @@ int separer_commande(char *cmd, char ***result, int *nb){
 			tmp[i-last_i+1] = '\0';
 			result[cpt] = malloc((compter_mot(cmd)+1)* sizeof(char*));
 			size += i-last_i+3;
-			separer_mots(result[cpt], tmp);
+			if(separer_mots(result[cpt], tmp)){
+				result[cpt] = NULL;
+				
+				return -1;	
+			}
 			cpt++;
 			free(tmp);
 			last_i = i;
