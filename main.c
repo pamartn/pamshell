@@ -32,25 +32,28 @@ void separer_mots(char** result, char *phrase){
 	unsigned int i = 0;
 	int j = 0;
 	int last_i = 0;
-	printf("Commande : %s\n", phrase);
+	//printf("Commande : %s\n", phrase);
 	for(i = 0; i < strlen(phrase) && phrase[i] != '|'; i++){
-		if(phrase[i] == ' ' || i == strlen(phrase)-1){
-			result[j] = malloc(i - last_i+2);
+		if((phrase[i] == ' ' && phrase[i+1] != ' ') || i == strlen(phrase)-1){
+			while(isspace(phrase[i]))
+                            i++;
+                        
+                        result[j] = malloc(i - last_i+2);
 			strncpy(result[j], &phrase[last_i], i-last_i+1);
 			result[j][i-last_i+1] = '\0';
-			printf("Mot : %s\n", result[j]);
+			//printf("Mot : %s\n", result[j]);
 			last_i = i; 
 			j++;
 		}
-	}	
+	}
 }
 
 
 
 char ***ligne_commande(int *flag, int *nb){
 	char *cmd = readline(NULL);
-	int nb_cmd = compter_commande(cmd)+1;
-	char *** result = malloc(nb_cmd);
+	int nb_cmd = compter_commande(cmd)+2;
+        char *** result = malloc(nb_cmd);
 	unsigned int i = 0;
 	int last_i = 0;
 	int cmd_id = 0;
@@ -61,17 +64,17 @@ char ***ligne_commande(int *flag, int *nb){
 			*flag = -1;
 		i++;
 	}
-	while(i < strlen(cmd) && *flag != -1){
+	while(i < strlen(cmd) && *flag != -1 && cmd_id < nb_cmd){
 			if((cmd[i] == '|' || i== strlen(cmd)-1) && cmd[i] != '&'){
-				while((cmd[i] == '|' || cmd[i] == ' ') && i < strlen(cmd)-2){
+                                while((cmd[i] == '|' || cmd[i] == ' ') && i < strlen(cmd)-2){
 					i++;
 				}		
 				char *phrase = malloc(i-last_i+2);
 				strncpy(phrase, &cmd[last_i], i-last_i+1);
 				phrase[i-last_i+1] = '\0'; 
-				result[cmd_id] = malloc(compter_mot(phrase));
+				result[cmd_id] = malloc(compter_mot(phrase)+2);
 				separer_mots(result[cmd_id], phrase);		
-
+                                free(phrase);
 				last_i = i;
 				cmd_id++;	
 			} else if (cmd[i] == '&'){
@@ -85,8 +88,9 @@ char ***ligne_commande(int *flag, int *nb){
 			}
 			i++;
 		}
+        result[cmd_id] = NULL;
 	if(*flag >= 0){
-		*nb = nb_cmd;
+		*nb = nb_cmd-1;
 		return result;
 	} else		
 		return NULL;
@@ -95,7 +99,18 @@ char ***ligne_commande(int *flag, int *nb){
 int main(void){
 	int flag;
 	int nb;
-	ligne_commande(&flag,&nb);
-	printf("FLAG : %d NB : %d\n", flag, nb);
+	char ***cmdline = ligne_commande(&flag,&nb);
+        int i = 0;
+        int j = 0;
+        while(cmdline[i] != NULL){
+            printf("Commande n°%d\n", i);
+            while(cmdline[i][j] != NULL){
+                printf("Mot : %s\n", cmdline[i][j]);
+                j++;
+            }
+            j = 0;
+            i++;
+        }
+        printf("FLAG : %d NB : %d\n", flag, nb);
 	return 0;
 }
