@@ -68,6 +68,7 @@ int separer_commande(char *cmd, char ***result, int *nb){
 				if(isspace(cmd[tmp]))
 					tmp++;
 				else{
+					result = NULL;
 					result[cpt] = NULL;
 					return -1;
 				}
@@ -104,7 +105,7 @@ int main(void){
 	int flag;
 	int nb;
 	char ***cmdline = ligne_commande(&flag,&nb);
-        
+       	if(cmdline != NULL){ 
 	int i = 0;
         int j = 0;
         while(cmdline[i] != NULL){
@@ -119,5 +120,6 @@ int main(void){
             i++;
         }
         printf("FLAG : %d NB : %d\n", flag, nb);
+	}
 	return 0;
 }
